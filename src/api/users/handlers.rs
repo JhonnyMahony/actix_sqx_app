@@ -1,50 +1,52 @@
 use super::models::{LoginForm, RegisterForm, User};
-use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
+use crate::errors::AppError;
+use actix_web::{delete, get, post, put, web, HttpResponse, Responder, Result};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use sqlx;
+use validator::Validate;
 
 #[post("/register")]
 pub async fn register_user(
     pool: web::Data<sqlx::PgPool>,
     user: web::Json<RegisterForm>,
-) -> impl Responder {
+) -> Result<impl Responder, AppError> {
+    user.validate()?;
+
     let hashed_password = hash(&user.password, DEFAULT_COST).expect("Failed to hash password");
     let query = "INSERT INTO users (email, password) VALUES ($1, $2)";
-    match sqlx::query(query)
+    sqlx::query(query)
         .bind(&user.email)
         .bind(hashed_password)
         .execute(pool.get_ref())
-        .await
-    {
-        Ok(_) => return HttpResponse::Ok().json("user created succesfully"),
-        Err(_) => return HttpResponse::BadRequest().json("Cant create user"),
-    }
+        .await?;
+
+    Ok(HttpResponse::Ok().json("User created successfully"))
 }
 
 #[post("/login")]
 pub async fn login_user(
     pool: web::Data<sqlx::PgPool>,
     form_data: web::Json<LoginForm>,
-) -> impl Responder {
+) -> Result<impl Responder, AppError> {
+
+    form_data.validate()?;
+
     let query = "SELECT * FROM users WHERE email = $1";
-    let user = match sqlx::query_as::<_, User>(query)
+
+    let user = sqlx::query_as::<_, User>(query)
         .bind(&form_data.email)
         .fetch_one(pool.get_ref())
-        .await
-    {
-        Ok(user) => user,
-        Err(_) => return HttpResponse::BadRequest().json("user not found"),
-    };
+        .await?;
 
     match verify(&form_data.password, &user.password) {
         Ok(is_correct) => {
             if is_correct {
-                HttpResponse::Ok().json(user)
+                Ok(HttpResponse::Ok().json(user))
             } else {
-                HttpResponse::Ok().json("incorrect password")
+                Ok(HttpResponse::Ok().json("incorrect password"))
             }
         }
-        Err(_) => HttpResponse::InternalServerError().finish(),
+        Err(_) => Err(AppError::InternalServerError),
     }
 }
 

@@ -1,23 +1,21 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use validator::{Validate, ValidationError, validate_email};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Validate)]
 pub struct RegisterForm {
+    #[validate(custom="email_validation")]
     pub email: String,
+    #[validate(custom="contains_uppercase")]
+    #[validate(custom="len_validation")]
     pub password: String,
     pub confirm_password: String,
 }
-
-impl RegisterForm {
-    
-    pub fn passw_validation(&self) -> bool{
-        self.password == self.confirm_password
-    }
-}
     
 
-#[derive(Serialize, Deserialize, FromRow)]
+#[derive(Serialize, Deserialize, FromRow, Validate)]
 pub struct LoginForm {
+    #[validate(custom="email_validation")]
     pub email: String,
     pub password: String,
 }
@@ -28,3 +26,37 @@ pub struct User {
     pub email: String,
     pub password: String,
 }
+
+fn email_validation(email: &str) -> Result<(), ValidationError>{
+    if validate_email(email){
+        Ok(())
+    } else {
+        Err(ValidationError::new("incorrect email format"))
+    }
+}
+
+fn len_validation(password: &str) -> Result<(), ValidationError> {
+    if password.len() < 8{
+        Err(ValidationError::new("password min len is 8"))
+    } else{
+        Ok(())
+    }
+}
+
+fn contains_uppercase(password: &str) -> Result<(), ValidationError> {
+    if password.chars().any(|c| c.is_uppercase()) {
+        Ok(())
+    } else {
+        Err(ValidationError::new("password must contain uppercase"))
+    }
+}
+
+fn passwords_match(password: &str, confirmation: &str) -> Result<(), ValidationError> {
+    if password == confirmation {
+        Ok(())
+    } else {
+        Err(ValidationError::new("passwords do not match"))
+    }
+}
+
+

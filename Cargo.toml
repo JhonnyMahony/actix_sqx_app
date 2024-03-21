@@ -15,3 +15,6 @@ tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 chrono = { version = "^0", features = ["serde"] }
 validator = { version = "0.16", features = ["derive"] }
+derive_more = "0.99.0"
+serde_json = "1.0.105"
+thiserror = "1.0.48"
