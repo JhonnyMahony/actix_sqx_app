@@ -1,15 +1,35 @@
 use super::models::{LoginForm, RegisterForm, User};
+use super::auth::utils::encode_token;
+use super::auth::auth_token::AuthenticationToken;
 use crate::errors::AppError;
+use crate::middleware::jwt_middleware::AuthToken;
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder, Result};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use sqlx;
 use validator::Validate;
+use chrono::{Utc, Duration};
+
+#[post("/jwt_send")]
+pub async fn jwt_send() -> Result<impl Responder, AppError> {
+    let exp: usize = (Utc::now() + Duration::minutes(15)).timestamp() as usize;
+    let id: i32 = 1; 
+    let access_token = encode_token(id, exp).await;
+    Ok(HttpResponse::Ok().json(&access_token))
+}
+
+    
+#[post("/protected")]
+pub async fn jwt_claim(token: web::ReqData<AuthToken>) -> Result<impl Responder, AppError> {
+    Ok(HttpResponse::Ok().json(token.id))
+}
 
 #[post("/register")]
 pub async fn register_user(
     pool: web::Data<sqlx::PgPool>,
     user: web::Json<RegisterForm>,
+    token: AuthenticationToken,
 ) -> Result<impl Responder, AppError> {
+    println!("{}", token.id);
     user.validate()?;
 
     let hashed_password = hash(&user.password, DEFAULT_COST).expect("Failed to hash password");

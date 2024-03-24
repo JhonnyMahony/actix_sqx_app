@@ -1,3 +1,5 @@
+
+//other models
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use validator::{Validate, ValidationError, validate_email};
@@ -26,6 +28,13 @@ pub struct User {
     pub email: String,
     pub password: String,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Claims {
+    pub sub: i32,
+    exp: usize,
+}
+
 
 fn email_validation(email: &str) -> Result<(), ValidationError>{
     if validate_email(email){

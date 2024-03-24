@@ -7,6 +7,8 @@ pub fn config(cfg: &mut web::ServiceConfig){
         web::scope("/users")
             .service(handlers::register_user)
             .service(handlers::login_user)
+            .service(handlers::jwt_send)
+            .service(handlers::jwt_claim)
             //.service(handlers::get_users)
             //.service(handlers::post_users)
             //.service(handlers::update_users)
