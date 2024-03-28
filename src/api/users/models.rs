@@ -1,8 +1,8 @@
-
 //other models
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use validator::{Validate, ValidationError, validate_email};
+use actix_multipart::form::{tempfile::TempFile, text::Text, MultipartForm};
 
 #[derive(Serialize, Deserialize, Validate)]
 pub struct RegisterForm {
@@ -13,7 +13,25 @@ pub struct RegisterForm {
     pub password: String,
     pub confirm_password: String,
 }
-    
+
+#[derive(MultipartForm)]
+#[multipart(deny_unknown_fields)]
+#[multipart(duplicate_field = "deny")]
+pub struct UserMultipart{
+    pub name: Text<String>,
+    pub surname: Text<String>,
+    pub phone_number: Text<String>,
+    #[multipart(limit = "10 MiB")]
+    pub photo: TempFile
+}
+
+#[derive(Serialize, Deserialize, FromRow)]
+pub struct UserProfile{
+    pub name: String,
+    pub surname: String,
+    pub phone_number: String,
+    pub photo: String
+}
 
 #[derive(Serialize, Deserialize, FromRow, Validate)]
 pub struct LoginForm {

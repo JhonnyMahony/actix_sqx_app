@@ -7,7 +7,7 @@ use jsonwebtoken::{
     DecodingKey,
     Algorithm, Validation, TokenData, errors::Error as JwtError, 
 };
-use super::auth_token::Claims;
+use crate::{api::users::auth::auth_token::Claims, errors::AppError};
 
 pub async fn encode_token(sub: i32, exp: usize) -> String{
     
@@ -31,6 +31,4 @@ pub fn decode_token(token: &str) -> Result<TokenData<Claims>, JwtError> {
         &Validation::new(Algorithm::HS256)
     );
     decoded
-    
-
 }

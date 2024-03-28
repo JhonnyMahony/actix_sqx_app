@@ -7,7 +7,7 @@ use jsonwebtoken::{
 };
 use serde::{Deserialize, Serialize};
 use std::future::{ready, Ready};
-use super::utils::decode_token;
+use crate::utils::jwt::decode_token;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {

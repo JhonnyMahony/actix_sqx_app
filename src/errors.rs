@@ -1,10 +1,11 @@
+use actix_multipart::MultipartError;
 use actix_web::{error::ResponseError, http::StatusCode, HttpResponse};
 use serde_json::{Map as JsonMap, Value as JsonValue};
 use sqlx::Error as PgError;
-use std::convert::From;
+use std::{convert::From, string::FromUtf8Error, io::Error as ioError};
 use thiserror::Error as ThisError;
 use validator::ValidationErrors;
-
+use jsonwebtoken::errors::Error as JwtError;
 #[derive(ThisError, Debug)]
 pub enum AppError {
     // 400
@@ -42,9 +43,7 @@ impl ResponseError for AppError {
             AppError::UnprocessableEntity(ref message) => {
                 HttpResponse::build(StatusCode::UNPROCESSABLE_ENTITY).json(message)
             }
-            AppError::InternalServerError => {
-                HttpResponse::InternalServerError().json("Internal Server Error")
-            }
+            _ => HttpResponse::InternalServerError().json("Internal Server Error"),
         }
     }
 }
@@ -58,8 +57,36 @@ impl From<PgError> for AppError {
                 AppError::InternalServerError
             }
 
-            _ => AppError::InternalServerError,
+            _ => {
+                println!("{}", err);
+                AppError::InternalServerError},
         }
+    }
+}
+
+impl From<JwtError> for AppError{
+    fn from(value: JwtError) -> Self {
+        AppError::UnprocessableEntity(value.to_string().into())
+    }
+}
+
+impl From<FromUtf8Error> for AppError{
+    fn from(_value: FromUtf8Error) -> Self {
+        AppError::InternalServerError
+    }
+}
+
+impl From<ioError> for AppError{
+    fn from(_value: ioError) -> Self {
+        AppError::UnprocessableEntity("cant write file".into())
+    }
+}
+
+impl From<MultipartError> for AppError {
+    fn from(err: MultipartError) -> Self {
+        // Your conversion logic here
+        // For example, you might have a variant of AppError specifically for multipart errors
+        AppError::UnprocessableEntity(err.to_string().into()) // Assuming AppError has a variant for MultipartError
     }
 }
 
@@ -71,7 +98,8 @@ impl From<ValidationErrors> for AppError {
         // Iterate over the field errors
         for (field, field_errors) in errors.field_errors() {
             // For each field, we'll concatenate all its errors into a single string message
-            let error_messages = field_errors.iter()
+            let error_messages = field_errors
+                .iter()
                 .map(|error| {
                     // Each error might have a detailed message, but for simplicity, we use the error kind's name
                     // You might need to adjust this part to match your error handling
@@ -88,4 +116,3 @@ impl From<ValidationErrors> for AppError {
         AppError::UnprocessableEntity(serde_json::json!({ "validation_errors": simplified_errors }))
     }
 }
-

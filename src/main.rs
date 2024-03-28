@@ -3,12 +3,12 @@ use actix_web::middleware::Logger;
 use actix_web::{cookie::SameSite, web, App, HttpServer};
 use dotenv::dotenv;
 use env_logger::Env;
-use middleware::jwt_middleware;
 use sqlx::postgres::PgPoolOptions;
 use std::env;
 mod api;
 mod middleware;
 mod errors;
+mod utils;
 
 pub type Pool = sqlx::Pool<sqlx::Postgres>;
 
@@ -38,9 +38,10 @@ async fn main() -> std::io::Result<()> {
                     .same_site(SameSite::Strict)
                     .max_age(24 * 60 * 60),
             )
-            .wrap(jwt_middleware::JwtValidator)
+            //.wrap(jwt_middleware::JwtValidator)
             .app_data(web::Data::new(pool.clone()))
             .service(web::scope("/api/v1")
+            .configure(api::admin::routes::config)
             .configure(api::users::routes::config))
     };
 

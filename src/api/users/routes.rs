@@ -1,17 +1,12 @@
 use actix_web::web;
 use crate::api::users::handlers;
 
-
 pub fn config(cfg: &mut web::ServiceConfig){
     cfg.service(
         web::scope("/users")
             .service(handlers::register_user)
             .service(handlers::login_user)
-            .service(handlers::jwt_send)
-            .service(handlers::jwt_claim)
-            //.service(handlers::get_users)
-            //.service(handlers::post_users)
-            //.service(handlers::update_users)
-            //.service(handlers::delete_users)
+            .service(handlers::update_profile)
+            .service(handlers::get_user_profile)
     );
 }
